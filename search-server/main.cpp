@@ -1,6 +1,5 @@
 // Решите загадку: Сколько чисел от 1 до 1000 содержат как минимум одну цифру 3?
 // Напишите ответ здесь:433
-//В каждой сотне у нас 9 раз число заканчивается на 3 и один десяток (30-39) получается 37 раз на 9 сотен  = 333 плюс сотня (300-399) Итого 433
 //
 
 // Закомитьте изменения и отправьте их в свой репозиторий.
@@ -67,9 +66,9 @@ public:
 	void AddDocument(int document_id, const string &document) {
 		const auto doc = SplitIntoWordsNoStop(document);
 		documents_count_++;
-		const int doc_size = doc.size();
+		const double temp_rel_tf = 1.0 / doc.size();
 		for (const auto &word: doc) {
-			words_storage_[word][document_id] += 1.0 / doc_size;
+			words_storage_[word][document_id] += temp_rel_tf;
 		}
 	}
 
@@ -120,24 +119,13 @@ private:
 		return query_words;
 	}
 
+	double CalculateRelevanceIDF(const int number_entry_word) const {
+		return log(documents_count_ / static_cast<double>(number_entry_word));
+	}
+
 	vector<Document> FindAllDocuments(const QueryWords &query_words) const {
 		map<int, double> relevance; // ID and number of occurrences of a word in documents
-
 		double temp_rel_idf{0};
-		//SLOW VARIANT
-		//We go through all the words
-		//		for (const auto &[word, data]: words_storage_) {
-		//			//Checking if the word is in the query
-		//			if (query_words.words.count(word) != 0) {
-		//				//Adding all documents to the list of documents
-		//				temp_rel_idf = log(documents_count_ / static_cast<double>(data.size()));
-		//				//Go through all indexes
-		//				for (const auto &[id, rel_tf]: data) {
-		//					relevance[id] += rel_tf * temp_rel_idf;
-		//				}
-		//			}
-		//		}
-		//FAST VARIANT
 		//We go through the words of the request
 		for (const auto &query_word: query_words.words) {
 			//We get an iterator for the desired word
@@ -145,24 +133,14 @@ private:
 			//Checking for existence in the repository
 			if (required_word != words_storage_.end()) {
 				//We cache the required rel_idf so as not to calculate it
-				temp_rel_idf = log(documents_count_ / static_cast<double>(required_word->second.size()));
+				temp_rel_idf = CalculateRelevanceIDF(required_word->second.size());
 				for (auto &[id, rel_tf]: required_word->second) {
 					//We go through all the ID documents that the iterator refers to
 					relevance[id] += rel_tf * temp_rel_idf;
 				}
 			}
 		}
-		//SLOW VARIANT
-		//Delete minus words from entry
-		//		for (const auto &word: words_storage_) {
-		//			if (query_words.words_minus.count(word.first) != 0) {
-		//				for (const auto &[id, r]: word.second) {
-		//					relevance.erase(id);
-		//				}
-		//			}
-		//		}
-		//FAST VARIANT
-		//Analogue of the above fast function
+		//Analogue of the above function
 		for (const auto &query_word: query_words.words_minus) {
 			auto required_document = words_storage_.find(query_word);
 			if (required_document != words_storage_.end()) {
