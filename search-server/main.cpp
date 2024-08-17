@@ -116,8 +116,13 @@ private:
 
     //If you pass as a string word, this will cause the find method to be called again and allocate space for storing the iterator,
     //passing as already found map element ensures that the object has already been existed, and we don't need to find again
-    double CalculateRelevanceIDF(const pair<string, map<int, double>> &word) const {
-        return log(documents_count_ / static_cast<double>(word.second.size()));
+    double CalculateRelevanceIDF(const string &word) const {
+        auto required_word = words_storage_.find(word);
+        if (required_word != words_storage_.end()) {
+            return log(documents_count_ / static_cast<double>(required_word->second.size()));
+        } else {
+            return 0;
+        }
     }
 
     vector<Document> FindAllDocuments(const QueryWords &query_words) const {
@@ -130,7 +135,7 @@ private:
             //Checking for existence in the repository
             if (required_word != words_storage_.end()) {
                 //We cache the required rel_idf so as not to calculate it, calling via a pointer is much more efficient, than &string
-                temp_rel_idf = CalculateRelevanceIDF(*required_word);
+                temp_rel_idf = CalculateRelevanceIDF(query_word);
                 for (auto &[id, rel_tf]: required_word->second) {
                     //We go through all the ID documents that the iterator refers to
                     relevance[id] += rel_tf * temp_rel_idf;
