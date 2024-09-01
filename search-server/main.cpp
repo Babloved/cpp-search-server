@@ -10,6 +10,19 @@ using namespace std;
 //Maximum number of documents to display
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
+string ReadLine() {
+    string s;
+    getline(cin, s);
+    return s;
+}
+
+int ReadLineWithNumber() {
+    int result;
+    cin >> result;
+    ReadLine();
+    return result;
+}
+
 vector<string> SplitIntoWords(const string &text) {
     vector<string> words;
     string word;
@@ -98,6 +111,30 @@ public:
 
     int GetDocumentCount() const {
         return static_cast<int>(documents_.size());
+    }
+    //Finds all words from a query in a document, return words and status document
+    tuple<vector<string>, DocumentStatus> MatchDocument(const string &raw_query,
+                                                        int document_id) const {
+        const Query query = ParseQuery(raw_query);
+        vector<string> matched_words;
+        for (const string &word: query.plus_words) {
+            if (word_to_document_freqs_.count(word) == 0) {
+                continue;
+            }
+            if (word_to_document_freqs_.at(word).count(document_id)) {
+                matched_words.push_back(word);
+            }
+        }
+        for (const string &word: query.minus_words) {
+            if (word_to_document_freqs_.count(word) == 0) {
+                continue;
+            }
+            if (word_to_document_freqs_.at(word).count(document_id)) {
+                matched_words.clear();
+                break;
+            }
+        }
+        return {matched_words, documents_.at(document_id).status};
     }
 
 private:
