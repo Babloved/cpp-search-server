@@ -102,33 +102,27 @@ public:
     }
 
     int GetDocumentId(const int index) {
-        auto result = find_if(documents_id_.begin(), documents_id_.end(), [index](const std::pair<int, int> &p) {
-            return p.second == index;
-        });
-        if (result == documents_id_.end()) {
-            throw out_of_range("Not found ID at serial number: " + to_string(index));
-        }
-        return result->first;
+        return documents_id_.at(index);
     }
 
     void CheckValidDocID(const int document_id) {
         if (document_id < 0) {
             throw invalid_argument("Argument negative: " + to_string(document_id));
-        } else if (documents_id_.count(document_id)) {
+        } else if (documents_.count(document_id)) {
             throw invalid_argument("Argument " + to_string(document_id) + " is occupied");
         }
     }
 
     void AddDocument(int document_id, const string &document, DocumentStatus status,
                      const vector<int> &ratings) {
-        const vector<string> words = SplitIntoWordsNoStop(document);
         CheckValidDocID(document_id);
+        const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
         for (const string &word: words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
-        documents_id_[document_id] = static_cast<int>(documents_id_.size());
+        documents_id_.push_back(document_id);
     }
 
     template<typename DocumentPredicate>
@@ -199,7 +193,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
-    map<int, int> documents_id_;// document id and serial-number
+    vector<int> documents_id_;// document id and serial-number
 
     [[nodiscard]] bool IsStopWord(const string &word) const {
         return stop_words_.count(word) > 0;
