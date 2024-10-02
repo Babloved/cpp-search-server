@@ -8,7 +8,6 @@ void SearchServer::AddDocument(int document_id, const string &document, Document
         throw invalid_argument("Invalid document_id"s);
     }
     const auto words = SplitIntoWordsNoStop(document);
-
     const double inv_word_count = 1.0 / words.size();
     for (const string &word: words) {
         word_to_document_freqs_[word][document_id] += inv_word_count;
@@ -39,7 +38,6 @@ int SearchServer::GetDocumentId(int index) const {
 tuple<vector<string>, DocumentStatus> SearchServer::MatchDocument(const string &raw_query,
                                                                   int document_id) const {
     const auto query = ParseQuery(raw_query);
-
     vector<string> matched_words;
     for (const string &word: query.plus_words) {
         if (word_to_document_freqs_.count(word) == 0) {
@@ -90,9 +88,6 @@ int SearchServer::ComputeAverageRating(const vector<int> &ratings) {
 }
 
 SearchServer::QueryWord SearchServer::ParseQueryWord(const string &text) const {
-    if (text.empty()) {
-        throw invalid_argument("Query word is empty"s);
-    }
     string word = text;
     bool is_minus = false;
     if (word[0] == '-') {
@@ -102,7 +97,6 @@ SearchServer::QueryWord SearchServer::ParseQueryWord(const string &text) const {
     if (word.empty() || word[0] == '-' || !IsValidWord(word)) {
         throw invalid_argument("Query word "s + text + " is invalid");
     }
-
     return {word, is_minus, IsStopWord(word)};
 }
 
@@ -124,6 +118,8 @@ SearchServer::Query SearchServer::ParseQuery(const string &text) const {
 double SearchServer::ComputeWordInverseDocumentFreq(const string &word) const {
     return log(GetDocumentCount() * 1.0 / word_to_document_freqs_.at(word).size());
 }
+
+
 
 
 
